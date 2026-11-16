@@ -13,14 +13,14 @@ aceitos, 2007–2018), com cargas incrementais e reprocessamento seguro.
   snapshot original (verificado em teste).
 - **Idempotência:** reprocessar a mesma carga não duplica nem altera nada; reprocessar uma carga antiga
   não sobrescreve dados mais novos; um arquivo reentregue com correção é detectado pelo checksum e aplicado.
-- **Qualidade:** contrato de colunas por carga, 9 regras que mandam a linha para a quarentena e 7 que só
+- **Qualidade:** contrato de colunas por carga, 9 regras que mandam a linha para a quarentena e 10 que só
   sinalizam, portão de taxa de quarentena e validação da chave após o MERGE, com rollback automático
   (time travel do Delta).
 - **Camada analítica:** cubo com medidas aditivas + consultas SQL versionadas para os indicadores pedidos
   (por safra, trimestre, UF, grade e finalidade).
 - **Evidências:** [profiling do dado real](docs/profiling_report.md), [cargas simuladas](docs/simulation_summary.md),
   [indicadores](docs/kpi_report.md) e [demonstração de reprocessamento](docs/evidence_reprocessamento.md),
-  todos gerados pelo próprio pipeline. 57 testes automatizados rodam no CI (GitHub Actions).
+  todos gerados pelo próprio pipeline. 61 testes automatizados rodam no CI (GitHub Actions).
 - **Uso de IA:** documentado em [AI_USAGE.md](AI_USAGE.md).
 
 <!-- PREENCHER após a execução completa: 2-3 números de destaque (linhas processadas, empréstimos na silver, taxa de default) -->
@@ -86,7 +86,7 @@ dataset público. O [profiling](docs/profiling_report.md) confirma unicidade e m
 numéricos são linhas de rodapé do arquivo ("Total amount funded in policy code..."), que vão para a
 quarentena. Na silver, `id` vira `loan_id` (`bigint`).
 
-<!-- PREENCHER: números do profiling que sustentam a decisão (ids distintos, repetidos, não numéricos) -->
+Números do profiling: 2.260.701 linhas no arquivo, das quais 2.260.668 têm `id` numérico, todos distintos (nenhum `id` repetido e nenhuma linha duplicada). As 33 restantes são rodapés, com todas as demais colunas vazias. `member_id` está vazio em 100% das linhas.
 
 ### Tipos
 
@@ -121,7 +121,15 @@ publica apenas o necessário para a análise (minimização de dados).
   fora de faixa, encerrado com saldo em aberto). O critério: só rejeita o que tornaria o indicador errado;
   o que é estranho mas plausível é sinalizado, não descartado.
 
-<!-- PREENCHER: ajustes de regra feitos depois do profiling do dado real -->
+**O que o profiling do dado real mudou** ([relatório](docs/profiling_report.md)):
+
+- Confirmou que as únicas linhas inválidas do arquivo são os 33 rodapés: nenhuma regra de erro dispara em
+  empréstimo real, então a quarentena não descarta dado legítimo.
+- Revelou três situações não previstas, que viraram alertas (não erros, porque nenhuma invalida os
+  indicadores): 4.537 empréstimos `Current` com saldo zero (provavelmente quitados perto da data do
+  snapshot), 21 com principal recebido maior que o valor financiado e 1.667 com renda anual ≤ 0.
+- Mostrou que `funded_amnt` é menor que `loan_amnt` em 2.065 empréstimos: valor originado e valor financiado
+  diferem de fato, o que justifica reportar os dois. `dti` passa de 100 em 2.561 casos (alerta já previsto).
 
 ### Cargas incrementais simuladas
 

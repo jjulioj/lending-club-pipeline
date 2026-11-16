@@ -57,6 +57,10 @@ def test_footer_row_goes_to_quarantine(spark):
         ({"sub_grade": "C1"}, "sub_grade_mismatch"),
         ({"dti": "999"}, "dti_out_of_range"),
         ({"status": "Fully Paid", "out_prncp": "50.0"}, "resolved_with_open_balance"),
+        # regras criadas a partir do profiling do dado real
+        ({"status": "Current", "out_prncp": "0.0"}, "current_with_zero_balance"),
+        ({"total_rec_prncp": "20000.0"}, "rec_prncp_gt_funded"),
+        ({"annual_inc": "0"}, "annual_inc_non_positive"),
     ],
 )
 def test_warning_rules_keep_the_row(spark, overrides, rule):

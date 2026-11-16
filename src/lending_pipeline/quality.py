@@ -78,6 +78,20 @@ def row_rules() -> list[Rule]:
             c("loan_status_normalized").isin("Fully Paid", "Charged Off") & (c("out_prncp") > 0),
             "empréstimo encerrado com saldo em aberto",
         ),
+        # ---- warnings adicionados depois do profiling do dado real (docs/profiling_report.md)
+        Rule(
+            "current_with_zero_balance",
+            "warning",
+            (c("loan_status") == "Current") & (c("out_prncp") == 0),
+            "Current com saldo zero (provavelmente quitado perto da data do snapshot)",
+        ),
+        Rule(
+            "rec_prncp_gt_funded",
+            "warning",
+            c("total_rec_prncp") > c("funded_amnt"),
+            "principal recebido maior que o valor financiado",
+        ),
+        Rule("annual_inc_non_positive", "warning", c("annual_inc") <= 0, "renda anual <= 0"),
     ]
 
 

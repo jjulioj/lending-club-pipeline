@@ -37,7 +37,7 @@ negócio, revisar o código, executar e validar no dado real, e responder pelo r
 
 ## Como validei o que a IA gerou
 
-- **Testes automatizados (57):** unitários com Spark (tipagem, regras, deduplicação, simulação, indicadores
+- **Testes automatizados (61):** unitários com Spark (tipagem, regras, deduplicação, simulação, indicadores
   calculados à mão) e de integração com Delta (pipeline de ponta a ponta, reprocessamento, portões de
   qualidade, evolução de schema). Rodam no CI a cada push.
 - **Propriedade verificável:** depois de todas as cargas simuladas, a silver tem que ser idêntica ao

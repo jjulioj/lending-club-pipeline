@@ -104,3 +104,12 @@ deveria; o erro foi do desenho do teste, feito pela IA, que não considerou a
 escala do cenário. Correção: limite de 50% só nos testes de integração; o teste
 específico do portão continua reprovando (10 de 11 linhas inválidas). O CI
 confirmou também que o caminho com Delta (bronze, MERGE, controle) funcionava.
+
+**12. Primeiro contato com o dado real e segundo erro.** O profiling leu
+2.260.701 linhas e 151 colunas em ~1 minuto e quebrou ao montar o relatório:
+como não existe nenhum `id` repetido no arquivo, uma soma sobre zero linhas
+voltou nula em vez de zero. O teste da IA só cobria o caso com repetidos.
+Correção: `coalesce` para zero na contagem condicional + teste de regressão
+sem repetidos (confirmado falhando antes da correção e passando depois).
+Primeiro achado do dado real: `id` não tem repetição, o que sustenta a escolha
+da chave.
