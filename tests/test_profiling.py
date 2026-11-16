@@ -16,3 +16,10 @@ def test_profile_report(spark, config, tmp_path):
     assert "| `id` não numérico | 2 |" in report
     assert "| `id` repetidos (ids com mais de 1 linha) | 1 |" in report
     assert "Total amount funded in policy code 1" in report
+
+def test_profile_report_without_duplicates(spark, config, tmp_path):
+    # Regressão: sem id repetido, a soma sobre zero linhas voltava nula e quebrava o relatório
+    raw = write_csv(portfolio(), tmp_path / "accepted_2007_to_2018Q4.csv")
+    report = run_profile(spark, config, raw_file=raw, output_file=tmp_path / "report.md").read_text()
+    assert "| `id` repetidos (ids com mais de 1 linha) | 0 |" in report
+    assert "| `id` repetido com conteúdo diferente | 0 |" in report

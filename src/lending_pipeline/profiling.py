@@ -88,7 +88,7 @@ def _date(c: str) -> Column:
 
 
 def _count_if(cond: Column) -> Column:
-    return F.sum(F.when(cond, 1).otherwise(0))
+    return F.coalesce(F.sum(F.when(cond, 1).otherwise(0)), F.lit(0))
 
 
 def _md_table(headers: list[str], rows: list[list]) -> str:

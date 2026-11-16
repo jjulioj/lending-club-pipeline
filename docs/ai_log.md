@@ -95,3 +95,12 @@ medidas aditivas + consultas SQL, relatórios de evidência e testes.
 ambiente do Claude. Os 6 testes que dependem de Delta (pipeline de ponta a
 ponta, reprocessamento, portões de qualidade, evolução de schema) **ainda não
 tinham sido executados** nesse ponto: rodam no meu Docker e no CI.
+
+**11. Primeiro erro real, pego pelo CI.** Na primeira execução dos testes com
+Delta (GitHub Actions), 5 testes de integração falharam: o cenário de teste
+tinha ~14 linhas por carga, 2 linhas de rodapé caíram na mesma carga (14%) e o
+portão de qualidade (limite de 5%) reprovou a carga. O portão funcionou como
+deveria; o erro foi do desenho do teste, feito pela IA, que não considerou a
+escala do cenário. Correção: limite de 50% só nos testes de integração; o teste
+específico do portão continua reprovando (10 de 11 linhas inválidas). O CI
+confirmou também que o caminho com Delta (bronze, MERGE, controle) funcionava.
