@@ -34,7 +34,11 @@ PARAMS = SimulationParams(update_fraction=0.6, conflict_fraction=0.15, duplicate
 @pytest.fixture
 def env(config, tmp_path):
     return dataclasses.replace(
-        config, landing_dir=tmp_path / "landing", lake_dir=tmp_path / "lake", reports_dir=tmp_path / "reports"
+        config,
+        landing_dir=tmp_path / "landing",
+        lake_dir=tmp_path / "lake",
+        reports_dir=tmp_path / "reports",
+        max_quarantine_rate=0.5,
     )
 
 
