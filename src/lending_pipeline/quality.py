@@ -88,8 +88,9 @@ def row_rules() -> list[Rule]:
         Rule(
             "rec_prncp_gt_funded",
             "warning",
-            c("total_rec_prncp") > c("funded_amnt"),
-            "principal recebido maior que o valor financiado",
+            # tolerância de 1 centavo, a mesma do profiling: diferença de arredondamento não é anomalia
+            (c("total_rec_prncp") - c("funded_amnt")) > 0.01,
+            "principal recebido maior que o valor financiado (acima de 1 centavo)",
         ),
         Rule("annual_inc_non_positive", "warning", c("annual_inc") <= 0, "renda anual <= 0"),
     ]

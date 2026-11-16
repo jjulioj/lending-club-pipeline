@@ -90,3 +90,9 @@ def test_unique_key_gate(spark):
         check_unique_key(spark.createDataFrame([(1,), (1,)], "loan_id bigint"))
     with pytest.raises(QualityGateError, match="nulo"):
         check_unique_key(spark.createDataFrame([(1,), (None,)], "loan_id bigint"))
+
+
+def test_cent_rounding_is_not_flagged(spark):
+    # total_rec_prncp 1 centavo acima do financiado: arredondamento, não anomalia
+    row = _check(spark, [loan(1, amount=10000.0, total_rec_prncp="10000.01")]).first()
+    assert "rec_prncp_gt_funded" not in row._dq_warnings

@@ -18,6 +18,8 @@ from .lake import current_version, delta_exists, tables
 from .pipeline import run_pipeline
 
 RATE_COLUMNS = {"default_rate", "default_rate_resolved", "default_amount_rate_resolved"}
+# Dimensões são rótulos: 2015 não vira "2,015"
+DIMENSION_COLUMNS = {"issue_year", "issue_quarter", "grade", "purpose", "addr_state", "regra"}
 PCT_POINT_COLUMNS = {"avg_int_rate", "weighted_avg_int_rate"}
 LABELS = {
     "loan_count": "Empréstimos",
@@ -38,6 +40,8 @@ LABELS = {
 def _fmt(column: str, value) -> str:
     if value is None:
         return "-"
+    if column in DIMENSION_COLUMNS:
+        return str(value)
     if column in RATE_COLUMNS:
         return f"{float(value) * 100:.2f}%"
     if column in PCT_POINT_COLUMNS:
@@ -80,11 +84,17 @@ def kpi_report(spark: SparkSession, config: Config) -> str:
 
     quarantine = spark.read.format("delta").load(t.silver_quarantine)
     q_by_rule = (
-        quarantine.select(F.explode("_dq_errors").alias("regra")).groupBy("regra").count().orderBy(F.desc("count"))
+        quarantine.select(F.explode("_dq_errors").alias("regra"))
+        .groupBy("regra")
+        .agg(F.count("*").alias("linhas"))
+        .orderBy(F.desc("linhas"))
     )
     silver = spark.read.format("delta").load(t.silver_loans)
     w_by_rule = (
-        silver.select(F.explode("_dq_warnings").alias("regra")).groupBy("regra").count().orderBy(F.desc("count"))
+        silver.select(F.explode("_dq_warnings").alias("regra"))
+        .groupBy("regra")
+        .agg(F.count("*").alias("linhas"))
+        .orderBy(F.desc("linhas"))
     )
 
     parts = [

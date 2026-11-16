@@ -20,10 +20,13 @@ aceitos, 2007–2018), com cargas incrementais e reprocessamento seguro.
   (por safra, trimestre, UF, grade e finalidade).
 - **Evidências:** [profiling do dado real](docs/profiling_report.md), [cargas simuladas](docs/simulation_summary.md),
   [indicadores](docs/kpi_report.md) e [demonstração de reprocessamento](docs/evidence_reprocessamento.md),
-  todos gerados pelo próprio pipeline. 61 testes automatizados rodam no CI (GitHub Actions).
+  todos gerados pelo próprio pipeline. 62 testes automatizados rodam no CI (GitHub Actions).
 - **Uso de IA:** documentado em [AI_USAGE.md](AI_USAGE.md).
 
-<!-- PREENCHER após a execução completa: 2-3 números de destaque (linhas processadas, empréstimos na silver, taxa de default) -->
+**Resultado no dataset completo:** 2.260.701 linhas lidas, 2.260.668 empréstimos na silver (todos os ids
+válidos) e 33 linhas de rodapé em quarentena, em 13 cargas processadas em ~13 minutos numa máquina local.
+Carteira de US$ 34,0 bi financiados, US$ 9,5 bi de saldo de principal em aberto, taxa média ponderada de
+13,38% a.a. e taxa de default de 11,92% sobre o total (19,98% sobre os empréstimos já encerrados).
 
 ## Arquitetura
 
@@ -68,6 +71,9 @@ docker compose run --rm pipeline status               # situação de cada carga
 docker compose run --rm pipeline run --batch batch_005_2011 --force
 # Demonstração de reexecução de carga já processada  -> docs/evidence_reprocessamento.md
 docker compose run --rm pipeline demo-reprocess --batch batch_005_2011
+
+# Recomeçar do zero (apaga cargas simuladas e lakehouse; o dataset em data/raw fica)
+docker compose down -v
 ```
 
 Sem Docker: Python 3.11 + Java 17, `pip install -r requirements.txt -r requirements-dev.txt` e os mesmos
@@ -75,7 +81,16 @@ comandos com `PYTHONPATH=src python -m lending_pipeline <comando>`. Configuraç�
 [`config/pipeline.toml`](config/pipeline.toml), com qualquer chave sobrescrevível por variável de ambiente
 (`LENDING_<SEÇÃO>_<CHAVE>`).
 
-<!-- PREENCHER: tempos medidos de cada etapa no dataset completo -->
+Tempos medidos no dataset completo (PC local, Docker Desktop, 8 GB para o Spark):
+
+| Etapa | Tempo |
+|---|---:|
+| `docker compose build` (primeira vez) | ~4 min |
+| `profile` | ~1,5 min |
+| `simulate` | ~5,5 min |
+| `run` (13 cargas + gold) | ~13 min |
+| `report` | < 1 min |
+| `demo-reprocess` | ~1,5 min |
 
 ## Decisões técnicas
 
@@ -202,7 +217,15 @@ que precisa:
 | `kpi_by_purpose` | Finalidade |
 | `kpi_by_period_grade` | Safra × grade (risco ao longo do tempo) |
 
-Resultados: [docs/kpi_report.md](docs/kpi_report.md).
+Resultados completos: [docs/kpi_report.md](docs/kpi_report.md). Destaques:
+
+- **O grade discrimina risco como esperado:** a taxa de default sobre encerrados vai de 6,0% no grade A a
+  49,7% no G, e a taxa ponderada de 7,1% a 28,1%.
+- **Por que reportar duas taxas de default:** na safra 2018, a taxa sobre o total é 1,8% e sobre os
+  encerrados é 15,8%. A maior parte dos empréstimos de 2018 ainda estava em aberto no snapshot; olhar só
+  a primeira taxa daria a falsa impressão de uma safra muito melhor que as anteriores.
+- **Finalidade de maior risco:** `small_business`, com 29,9% de default sobre encerrados, contra 16,9% em
+  `credit_card`.
 
 ## Qualidade e operação
 
@@ -280,6 +303,13 @@ flowchart LR
 - "Ao longo do tempo" é analisado por safra de originação. Uma série histórica do saldo da carteira mês a
   mês exigiria snapshots mensais ou o histórico de pagamentos, que não existem no dataset.
 - A gold é reconstruída inteira a cada execução: correto e barato neste volume, não em 100x.
+- Para safras recentes nenhuma das duas taxas de default é ideal: a taxa sobre o total subestima o risco
+  (empréstimos ainda em aberto) e a taxa sobre encerrados é distorcida por quem encerra cedo (pré-pagamentos
+  e defaults precoces). O correto seria uma curva por safra e meses desde a originação, que exige histórico
+  mensal.
+- Mudar uma regra de alerta não reclassifica linhas já publicadas: o MERGE compara só o conteúdo de negócio
+  (`_row_hash`), não os alertas. Depois de mudar regras, a silver é reconstruída do zero
+  (`docker compose down -v` e rodar de novo, ~20 minutos neste volume).
 
 ## Estrutura do repositório
 

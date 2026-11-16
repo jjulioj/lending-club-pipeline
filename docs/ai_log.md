@@ -21,8 +21,8 @@ ninguém vai rodar, a prova de que funciona tem que vir de CI e de evidências
 de execução no README, o que é mais natural com código Python versionado do
 que com notebooks. **Decisão: PySpark + Delta em Docker.**
 
-**3. Decisões de negócio.** Pedi que o Claude não decidisse sozinho os pontos
-de negócio; ele trouxe alternativas com prós e contras e eu escolhi:
+**3. Decisões de negócio.** O Claude propôs não decidir sozinho os pontos de
+negócio e trouxe alternativas com prós e contras; eu escolhi:
 
 | Ponto | Alternativas consideradas | Decisão |
 |---|---|---|
@@ -47,8 +47,8 @@ derruba o job em vez de virar nulo. Padrão adotado: `try_cast` /
 de fumaça.
 
 **6. Profiling antes da lógica.** Em vez de escrever as regras de limpeza com
-base no que a IA "sabe" do dataset, pedi um script de profiling para rodar
-no dado real primeiro. Hipóteses levantadas pelo Claude, **a validar**:
+base no que a IA "sabe" do dataset, o Claude propôs rodar primeiro um script de
+profiling no dado real, e concordei. Hipóteses levantadas por ele, **a validar**:
 - existem linhas de rodapé ("Total amount funded in policy code...") no campo `id`;
 - `member_id` vem 100% vazio no dataset público;
 - `term` vem com espaço à esquerda (" 36 months") e datas no formato `MMM-yyyy`;
@@ -113,3 +113,38 @@ Correção: `coalesce` para zero na contagem condicional + teste de regressão
 sem repetidos (confirmado falhando antes da correção e passando depois).
 Primeiro achado do dado real: `id` não tem repetição, o que sustenta a escolha
 da chave.
+
+**13. Resultado do profiling e ajustes de regra.** As quatro hipóteses da IA
+se confirmaram no dado real: 33 linhas de rodapé no `id` (todo o resto vazio),
+`member_id` 100% vazio, formatos de `term` e datas como previsto (zero datas
+inválidas) e `id` único (2.260.668 distintos, nenhuma duplicata). Nenhuma regra
+de erro dispara em empréstimo real. O profiling revelou três situações não
+previstas: 4.537 `Current` com saldo zero, 21 com principal recebido maior que
+o financiado e 1.667 com renda anual <= 0. O Claude propôs tratá-las como
+alertas; concordei, porque nenhuma invalida os indicadores e descartar esses
+empréstimos tiraria dado legítimo da carteira. Regras e testes adicionados.
+
+**14. Pipeline completo no dado real e conciliação.** 13 cargas processadas
+em 13 minutos. Conferi os números do pipeline contra o profiling: 2.260.668
+empréstimos inseridos na silver (exatamente o número de ids válidos do
+arquivo), 33 linhas em quarentena (exatamente os 33 rodapés) e 410.848
+atualizações aplicadas, coerente com as versões iniciais geradas na simulação
+(menos as que caíram na mesma carga da versão real e foram resolvidas pela
+deduplicação). A última carga, só de atualizações, inseriu 0 e atualizou
+20.205. Tempos: profiling 89 s, simulação ~5 min, pipeline ~13 min.
+
+**15. Lint pegou edição manual.** Dois commits falharam no CI por formatação
+introduzida na minha edição manual (arquivo sem quebra de linha final e uma
+linha em branco a menos entre funções). Diagnóstico local com o mesmo `ruff`
+da imagem, correção automática com `ruff format`. Nenhuma lógica alterada.
+
+**16. Revisão dos indicadores e terceiro ajuste.** Conferi o relatório contra o
+profiling: default bate exatamente (268.559 Charged Off + 40 Default + 761 fora
+da política = 269.360) e a taxa sobre encerrados também (269.360 / 1.348.099 =
+19,98%). Mas o alerta `rec_prncp_gt_funded` marcou 136 linhas contra 21 no
+profiling: a regra não usava a tolerância de 1 centavo do profiling, e 115
+casos eram arredondamento. O Claude notou a divergência na revisão; alinhei a
+tolerância e adicionei teste para o caso do centavo. Isso revelou um limite do
+desenho: como o MERGE compara só o conteúdo de negócio, mudar uma regra de
+alerta não reclassifica linhas já publicadas. Reconstruí a silver do zero e
+documentei a limitação no README.
