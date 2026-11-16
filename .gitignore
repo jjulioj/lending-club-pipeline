@@ -1,0 +1,26 @@
+# Dados: nunca versionar o dataset nem as tabelas geradas
+data/*
+!data/raw/
+data/raw/*
+!data/raw/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Spark / Delta locais
+spark-warehouse/
+metastore_db/
+derby.log
+.ivy2/
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

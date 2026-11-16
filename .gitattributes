@@ -1,0 +1,4 @@
+# Garante LF no repositório mesmo quando o clone é feito no Windows
+* text=auto eol=lf
+*.gz binary
+*.parquet binary

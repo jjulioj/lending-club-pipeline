@@ -1,0 +1,36 @@
+# Configuração do pipeline. Caminhos relativos à raiz do projeto.
+# Qualquer chave pode ser sobrescrita por variável de ambiente (ver config.py).
+
+[paths]
+# Arquivo bruto do Kaggle (aceita .csv ou .csv.gz)
+raw_file = "data/raw/accepted_2007_to_2018Q4.csv.gz"
+# Onde as cargas simuladas "chegam" (um arquivo por carga)
+landing_dir = "data/landing"
+# Raiz do lakehouse (tabelas Delta bronze/silver/gold/ops)
+lake_dir = "data/lake"
+# Relatórios gerados (profiling, evidências de execução)
+reports_dir = "docs"
+
+[spark]
+master = "local[*]"
+driver_memory = "8g"
+shuffle_partitions = 16
+
+[csv]
+# O campo `desc` tem texto livre; multiLine evita quebrar registros com
+# quebra de linha dentro de aspas.
+multiline = true
+
+[quality]
+# Acima dessa fração de linhas rejeitadas, a carga inteira falha e não é publicada
+max_quarantine_rate = 0.05
+
+[simulation]
+# Fração dos empréstimos com status alterado que chegam primeiro como "versão
+# inicial" e depois como atualização na carga seguinte
+update_fraction = 0.30
+# Fração com as duas versões dentro da mesma carga (exercita a deduplicação)
+conflict_fraction = 0.002
+# Fração de linhas repetidas de forma idêntica
+duplicate_fraction = 0.001
+seed = 42

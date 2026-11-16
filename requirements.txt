@@ -1,0 +1,4 @@
+# Versões fixadas: Delta 4.0.x é compilado para Spark 4.0.x (Scala 2.13).
+# Mesma linha de versão do Databricks Runtime baseado em Spark 4.0.
+pyspark==4.0.1
+delta-spark==4.0.0

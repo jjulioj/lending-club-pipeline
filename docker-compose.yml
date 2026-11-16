@@ -1,0 +1,34 @@
+# Uso (PowerShell, CMD ou bash, a partir da raiz do repositório):
+#   docker compose build
+#   docker compose run --rm tests
+#   docker compose run --rm pipeline profile
+#   docker compose run --rm pipeline simulate
+#   docker compose run --rm pipeline run
+services:
+  pipeline:
+    build: .
+    image: lending-club-pipeline:latest
+    volumes:
+      # Projeto montado no container: editar código não exige rebuild
+      - .:/app
+      # Cargas e lakehouse em volumes do Docker: I/O muito mais rápido que a
+      # pasta compartilhada do Windows e sem problema de permissão no Delta.
+      # `docker compose down -v` apaga tudo e permite recomeçar do zero.
+      - landing:/app/data/landing
+      - lake:/app/data/lake
+    environment:
+      LENDING_SPARK_DRIVER_MEMORY: ${SPARK_DRIVER_MEMORY:-8g}
+
+  tests:
+    build: .
+    image: lending-club-pipeline:latest
+    volumes:
+      - .:/app
+    entrypoint: ["pytest"]
+    command: ["-q"]
+    environment:
+      LENDING_SPARK_DRIVER_MEMORY: 2g
+
+volumes:
+  landing:
+  lake:
