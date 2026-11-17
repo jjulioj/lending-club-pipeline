@@ -1,5 +1,7 @@
 # Uso de IA no desenvolvimento
 
+Este documento eu escrevi com minhas palavras e pedi ao Claude apenas revisão e formatação.
+
 ## Resumo
 
 Usei o Claude (Anthropic), pelo app de conversa, como par de desenvolvimento do começo ao fim: leitura do
@@ -106,3 +108,11 @@ resultado estava certo. Dois aprendizados:
 - **O que eu faria diferente:** rodar o profiling no dado real antes de qualquer regra de limpeza (o
   domingo não rendeu e a ordem inverteu) e ler as partes centrais do código (o MERGE e as definições de
   negócio) logo que foram geradas, e não só no fim.
+
+## Considerações finais
+
+Meu papel neste projeto foi conduzir: decidi o que construir e como as peças se encaixam, escolhi entre
+as alternativas que a IA trouxe, rodei tudo no dado real e conferi os números até baterem. A IA acelerou
+muito a construção; sem ela, este escopo não caberia no prazo. A qualidade, porém, não veio dela: veio de
+testar, conciliar e corrigir o que ela errou. É assim que eu pretendo usar IA no dia a dia: para ir mais
+rápido, sem abrir mão de validar.
